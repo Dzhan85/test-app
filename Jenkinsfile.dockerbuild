@@ -40,7 +40,7 @@ script {
 
 stage('Docker Build') {
       steps {
-        sh "docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t your_account.dkr.ecr.us-east-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG} -f apps/titanarum/Dockerfile ." 
+        sh "docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t your_account.dkr.ecr.us-east-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG} -f Dockerfile ." 
       }
 }
 
