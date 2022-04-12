@@ -1,0 +1,69 @@
+pipeline {
+agent {
+    label 'jenkins-slave'
+}
+
+environment {
+AWS_ACCOUNT_ID="your_account"
+AWS_DEFAULT_REGION="us-east-1"
+IMAGE_REPO_NAME="apps/backend/dev"
+IMAGE_TAG="test-1.0.$BUILD_NUMBER"
+//tag = sh(returnStdout: true, script: "git rev-parse --short=10 HEAD").trim()
+//IMAGE_TAG="test-$tag"
+GITHUB_TOKEN="$GITHUB_TOKEN"
+REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+}
+
+stages {
+
+stage('Cloning Git') {
+steps {
+    // script {
+    //                 properties([pipelineTriggers([pollSCM('* * * * *')])])
+    //        }
+    checkout([$class: 'GitSCM', branches: [[name: '']], extensions: [], userRemoteConfigs: [[credentialsId: 'eksdev/jenkins/jenkins-ssh-key', url: 'git@github.com:Dzhan85/test-app.git']]])
+}
+}
+
+
+
+
+stage('Logging into AWS ECR') {
+steps {
+script {
+    sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+}
+
+}
+}
+
+
+stage('Docker Build') {
+      steps {
+        sh "docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t your_account.dkr.ecr.us-east-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG} -f apps/titanarum/Dockerfile ." 
+      }
+}
+
+
+
+// Push image into AWS ECR
+stage('Pushing to ECR') {
+steps{
+script {
+sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
+}
+}
+}
+
+} // End of stages
+post {
+   success {
+      slackSend channel: '#jenkins-builds',
+          message: " docker build ${IMAGE_TAG} is successful"
+   }
+   failure {
+      slackSend channel: '#jenkins-builds',
+          message: "T docker build ${IMAGE_TAG} has failed"
+   }
+}
+} // End of pipeline
