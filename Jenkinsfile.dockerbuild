@@ -7,9 +7,7 @@ environment {
 AWS_ACCOUNT_ID="your_account"
 AWS_DEFAULT_REGION="us-east-1"
 IMAGE_REPO_NAME="apps/backend/dev"
-IMAGE_TAG="test-1.0.$BUILD_NUMBER"
-//tag = sh(returnStdout: true, script: "git rev-parse --short=10 HEAD").trim()
-//IMAGE_TAG="test-$tag"
+IMAGE_TAG="1.0.$BUILD_NUMBER"
 GITHUB_TOKEN="$GITHUB_TOKEN"
 REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
 }
