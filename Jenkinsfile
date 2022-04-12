@@ -4,11 +4,14 @@ agent {
 }
 
 environment {
+DEPLOY = "${env.BRANCH_NAME == "main" || env.BRANCH_NAME == "develop" ? "true" : "false"}"
+NAME = "${env.BRANCH_NAME == "main" ? "example" : "example-staging"}"
 AWS_ACCOUNT_ID="your_account"
 AWS_DEFAULT_REGION="us-east-1"
 IMAGE_REPO_NAME="apps/backend/dev"
 IMAGE_TAG="1.0.$BUILD_NUMBER"
 GITHUB_TOKEN="$GITHUB_TOKEN"
+DOMAIN='localhost'
 REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
 }
 
@@ -37,6 +40,9 @@ script {
 
 
 stage('Docker Build') {
+     when {
+                environment name: 'DEPLOY', value: 'true'
+            }
       steps {
         sh "docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t your_account.dkr.ecr.us-east-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG} -f Dockerfile ." 
       }
@@ -46,12 +52,26 @@ stage('Docker Build') {
 
 // Push image into AWS ECR
 stage('Pushing to ECR') {
+ when {
+                environment name: 'DEPLOY', value: 'true'
+            }
 steps{
 script {
 sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
 }
 }
 }
+
+stage('Kubernetes Deploy') {
+            when {
+                environment name: 'DEPLOY', value: 'true'
+            }
+            steps {
+                container('helm') {
+                    sh "helm upgrade --install --force --set name=${NAME} --set image.tag=${IMAGE_TAG} --set domain=${DOMAIN} ${NAME} ./helm"
+                }
+            }
+        }
 
 } // End of stages
 post {
